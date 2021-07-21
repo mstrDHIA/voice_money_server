@@ -5,9 +5,10 @@ const User = require("../models/userModel");
 const { check, validationResult } = require("express-validator");;
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const generate = require('../middleware/usermiddleware');
+const e = require("express");
 
 
-const secret="c55508391a36839b3ff6ef9e45f815ca770ec2016219959eb9db054cf24208ef6b7f6713c0ab98462a98dd16997f76c7d6d7b4d81f72f2b0d2a42dff4aa7dc7f"
 
 
 const validate = [
@@ -16,9 +17,7 @@ const validate = [
 ]
 
 
-function generateAccessToken(user) {
-    return jwt.sign(user, secret, { expiresIn: '1800s' });
-  }
+
 
 
 //@route : /createaccount
@@ -41,7 +40,7 @@ router.post("/create_account", validate, (req, res) => {
     })
 
     user.save().then((user) => {
-        const token = generateAccessToken({ user: user });
+        const token = generate({ user: user });
         back = user+token
         res.send({
             message: "User is created with success !",
@@ -150,22 +149,65 @@ router.post("/login", (req, res) => {
         password: req.body.password,
     })
         query={username:user.username,password:user.password}
-        const result=User.exists(query,null).then(function(future){
-            if(future){
-                const token = generateAccessToken({ user: user });
-        
-                res.send({
-                    message: "User authorized ",
-                    data: token
-                });
+
+        User.findOne(query,null).then(thisuser=>{
+            if(!thisuser){
+                res.send("Access denied")
             }
             else{
-                res.send({
-                    message: "Access denied",
-                });
+                const founduser={"username" : thisuser.username,
+                        "email": thisuser.email,
+                        "age" : thisuser.age,
+                        "sex" : thisuser.sex,
+                        "country" : thisuser.country,
+                        "state" : thisuser.state,
+                        "city" : thisuser.city,
+                        "address" : thisuser.address,
+                        "socialstate" : thisuser.socialstate}
+                        const accessToken = generate.generateAccessToken({ user: founduser });
+                        const refreshToken = generate.generateRefreshToken({ user: founduser});
+                        const tokens={
+                            "access": accessToken,
+                            "refresh": refreshToken,
+                        }
+                        res.send({                    
+                            tokens
+                        });
             }
-
         })
+
+        // const result=User.exists(query,null).then(function(future){
+        //     if(future){
+        //         User.findById(userId).then(function(resp){
+        //             thisuser=new User({
+        //             username : resp.username,
+        //             email: resp.email,
+        //             age : resp.age,
+        //             sex : resp.sex,
+        //             country : resp.country,
+        //             state : resp.state,
+        //             city : resp.city,
+        //             address : resp.address,
+        //             socialstate : resp.socialstate
+        //             })
+        //         })
+        //         const accessToken = generate.generateAccessToken({ user: thisuser });
+        //         const refreshToken = generate.generateRefreshToken({ user: thisuser});
+        //         const tokens={
+        //             "access": accessToken,
+        //             "refresh": refreshToken,
+        //         }
+        //         res.send({                    
+        //             tokens
+        //         });
+        //     }
+        //     else{
+        //         res.send({
+        //             message: "Access denied",
+        //         });
+        //     }
+
+        // })
 })
 
 module.exports = router;

@@ -4,6 +4,7 @@ const assert =require('assert')
 const mongoose = require('mongoose');
 const bodyParser=require('body-parser');
 const users = require("./routes/userRoute");
+const generate = require("./middleware/usermiddleware");
 
 
 //Connect to mongodb
@@ -42,6 +43,5 @@ app.listen(port,(err)=>{
     }
     else{
         console.log("Listening on port",port);
-        
     }   
 })
